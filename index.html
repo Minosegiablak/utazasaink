@@ -120,6 +120,8 @@ label.upbtn{display:block;text-align:center;padding:14px;border:1px dashed var(-
 .shop{position:relative;display:block;text-decoration:none;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 10px;font-weight:600;font-size:15px;word-break:break-word}
 .shop small{display:block;color:var(--acc);font-weight:500;font-size:12px;margin-top:3px}
 .shop .x{position:absolute;top:-7px;right:-7px;width:28px;height:28px;border-radius:50%;border:0;background:var(--bad);color:#fff;font-size:13px;padding:0}
+.spin{animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -132,6 +134,7 @@ label.upbtn{display:block;text-align:center;padding:14px;border:1px dashed var(-
 <div id="drawer"></div>
 
 <script>
+const APP_VER = '2026-10-12-1710';
 /* ===== BEÁLLÍTÁS: ide másold be az Apps Script webalkalmazás URL-jét ===== */
 const API_URL = 'https://script.google.com/macros/s/AKfycby4dLibVnmzHDfwb40Bf_IqJKU7P5bgRMQMjBzvYXFyUAFlCTL5tdKGQ7-zngD58J_27Q/exec';
 
@@ -428,8 +431,12 @@ function closeViewer(){ $('viewer').classList.remove('open'); try{ WL&&WL.releas
 /* ===== Szerver ===== */
 async function api(action, payload={}){
   if(API_URL.startsWith('IDE_')) throw new Error('nincs URL');
-  const r = await fetch(API_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({action, code:S.code}, payload))});
-  return r.json();
+  const ctl = window.AbortController ? new AbortController() : null;
+  const tm = setTimeout(()=>{ try{ ctl && ctl.abort(); }catch(e){} }, action==='upload' ? 90000 : 25000);
+  try{
+    const r = await fetch(API_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({action, code:S.code}, payload)), signal: ctl ? ctl.signal : undefined});
+    return await r.json();
+  } finally { clearTimeout(tm); }
 }
 function applyOp(items, op){
   if(op.a==='delete') return items.filter(i=>i.id!==op.id);
@@ -453,22 +460,47 @@ async function flush(){
   }catch(e){ /* nincs net – később újrapróbálja */ }
   finally{ flushing=false; setSync(); }
 }
-async function load(silent){
-  if(!S.code || S.loading) return;
+async function load(silent, manual){
+  if(!S.code) return;
+  if(S.loading){ if(manual) toast('Frissítés folyamatban...'); return; }
   S.loading=true; if(!silent) setSync('frissítés...');
   try{
     await flush();
     const r = await api('list');
     if(r.auth===false){ logout(true); return; }
-    if(r.ok && !r.items.length && S.items.length && !S.queue.length){
+    if(!r.ok){ if(!silent) toast('Szerverhiba: '+(r.error||'ismeretlen')); return; }
+    if(!r.items.length && S.items.length && !S.queue.length){
       // A szerver üres, de a telefonon vannak adatok (pl. korábbi szerverhiba miatt) → feltöltjük őket
       S.queue.push({a:'saveMany',items:S.items.slice()}); persist();
       await flush();
+      if(manual) toast('Adatok feltöltve ✓');
       return;
     }
-    if(r.ok){ let items=r.items; S.queue.forEach(op=>{ items=applyOp(items,op); }); S.items=items; persist(); prefetchDocs(); }
+    let items=r.items; S.queue.forEach(op=>{ items=applyOp(items,op); }); S.items=items; persist(); prefetchDocs();
+    if(manual) toast(S.queue.length ? 'Frissítve – '+S.queue.length+' mentés még vár' : 'Frissítve ✓');
   }catch(e){ if(!silent) toast('Nincs kapcsolat – a telefonon tárolt adatokat látod'); }
   finally{ S.loading=false; safeRender(); const a=document.activeElement; if($('drawer').classList.contains('open') && !(a && a.id==='shopname')) renderDrawer(); }
+}
+async function checkUpdate(){
+  try{
+    const res=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});
+    if(!res.ok) return false;
+    const m=(await res.text()).match(new RegExp('APP_'+'VER = \'([^\']+)\''));
+    if(m && m[1]!==APP_VER){
+      let last=0; try{ last=Number(sessionStorage.getItem('upd')||0); }catch(e){}
+      if(Date.now()-last<60000) return false;
+      try{ sessionStorage.setItem('upd',String(Date.now())); }catch(e){}
+      toast('Új verzió érkezett, frissítés...');
+      setTimeout(()=>location.replace(location.pathname+'?v='+Date.now()),700);
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+async function refreshAll(btn){
+  if(btn) btn.classList.add('spin');
+  if(await checkUpdate()) return;
+  await load(false,true);
 }
 function setSync(t){ const el=$('sync'); if(!el) return; el.textContent = t ? ' · '+t : (S.queue.length ? ` · ⏳ ${S.queue.length} mentésre vár` : ''); }
 
@@ -510,7 +542,7 @@ function tripsHTML(){
   const today=todayStr();
   const trips=S.items.filter(i=>i.type==='trip').sort((a,b)=>(b.from||'').localeCompare(a.from||''));
   let h=`<header><h1>✈️ Utazásaink<div class="sub">Szia ${esc(S.user)}!<span id="sync" class="sync"></span></div></h1>
-    <button class="ib" onclick="load()">⟳</button><button class="ib" onclick="logout()">⏻</button></header><main>`;
+    <button class="ib" onclick="refreshAll(this)">⟳</button><button class="ib" onclick="logout()">⏻</button></header><main>`;
   if(!trips.length) h+=empty('Még nincs utazás.<br>Nyomd meg a <b>+</b> gombot és vedd fel az elsőt!');
   trips.forEach(t=>{
     const now = t.from && t.to && t.from<=today && today<=t.to;
@@ -527,7 +559,7 @@ function tripHTML(t){
   const items=S.items.filter(i=>i.trip===t.id && i.type===S.tab);
   return `<header><button class="ib" onclick="closeTrip()">←</button>
     <h1>${esc(t.name)}<div class="sub">${range(t.from,t.to)}<span id="sync" class="sync"></span></div></h1>
-    <button class="ib" onclick="load()">⟳</button><button class="ib" onclick="editItem('${t.id}')">✏️</button></header>
+    <button class="ib" onclick="refreshAll(this)">⟳</button><button class="ib" onclick="editItem('${t.id}')">✏️</button></header>
     <main>${tripBanner(t)}${overviewHTML(t)}${R[S.tab](items,t)}</main>
     <button class="fab" onclick="openForm('${S.tab}')">+</button>
     <nav>${TABS.map(x=>`<button class="${x.k===S.tab?'on':''}" onclick="setTab('${x.k}')"><span>${x.ic}</span>${x.l}</button>`).join('')}</nav>`;
@@ -747,8 +779,9 @@ function delItem(){
 /* ===== Indulás ===== */
 render();
 if(S.code) load(true);
+checkUpdate();
 setInterval(()=>{ if(S.code && !document.hidden && !$('sheet').classList.contains('open')) load(true); }, 60000);
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden && S.code) load(true); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) return; checkUpdate(); if(S.code) load(true); });
 setInterval(tick,30000);
 window.addEventListener('online',()=>{ if(S.code) load(true); });
 </script>
