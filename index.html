@@ -163,7 +163,7 @@ async function flush(){
       const p = op.a==='delete' ? {id:op.id} : op.a==='save' ? {item:op.item} : {items:op.items};
       const r = await api(op.a, p);
       if(r.auth===false){ logout(true); break; }
-      if(!r.ok) toast('Hiba: '+(r.error||'ismeretlen'));
+      if(!r.ok){ toast('Szerverhiba, a mentés a telefonon vár: '+(r.error||'ismeretlen')); break; }
       S.queue.shift(); persist(); setSync();
     }
   }catch(e){ /* nincs net – később újrapróbálja */ }
@@ -176,6 +176,12 @@ async function load(silent){
     await flush();
     const r = await api('list');
     if(r.auth===false){ logout(true); return; }
+    if(r.ok && !r.items.length && S.items.length && !S.queue.length){
+      // A szerver üres, de a telefonon vannak adatok (pl. korábbi szerverhiba miatt) → feltöltjük őket
+      S.queue.push({a:'saveMany',items:S.items.slice()}); persist();
+      await flush();
+      return;
+    }
     if(r.ok){ let items=r.items; S.queue.forEach(op=>{ items=applyOp(items,op); }); S.items=items; persist(); }
   }catch(e){ if(!silent) toast('Nincs kapcsolat – a telefonon tárolt adatokat látod'); }
   finally{ S.loading=false; safeRender(); }
@@ -266,7 +272,7 @@ const R = {
       <div class="card" onclick="editItem('${s.id}')">
         <div class="row"><h3 style="flex:1;min-width:0">🏠 ${esc(s.name)}</h3>${who(s.author)}</div>
         ${s.address?`<div class="meta">${esc(addrTxt(s.address))}</div>`:''}
-        ${s.code?`<div class="code" onclick="event.stopPropagation();copyCode('${s.id}')">${esc(s.code)}<small>belépési kód · koppints a másoláshoz</small></div>`:''}
+        ${s.code && !/^(nincs|-+|–|—|0)$/i.test(s.code.trim())?`<div class="code" onclick="event.stopPropagation();copyCode('${s.id}')">${esc(s.code)}<small>belépési kód · koppints a másoláshoz</small></div>`:''}
         <div class="kv">${kv('Érkezés',fdt(s.checkin))}${kv('Távozás',fdt(s.checkout))}${kv('Wifi',s.wifi)}${kv('Szállásadó',s.host)}</div>
         ${noteH(s)}
         <div class="acts">${mapA(s.address,t)}${s.link?`<a class="a" href="${esc(safeUrl(s.link))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗 Foglalás</a>`:''}</div>
