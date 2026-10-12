@@ -97,6 +97,29 @@ label.upbtn{display:block;text-align:center;padding:14px;border:1px dashed var(-
 #viewer img{width:100%;display:block;margin-bottom:10px;background:#fff;min-height:120px}
 #viewer .vx{position:fixed;top:calc(10px + env(safe-area-inset-top));right:12px;width:46px;height:46px;border-radius:50%;background:rgba(50,50,50,.9);color:#fff;border:0;font-size:20px;z-index:41}
 #viewer .vt{color:#fff;padding:calc(20px + env(safe-area-inset-top)) 70px 14px 16px;font-weight:600;font-size:17px}
+.next{background:linear-gradient(135deg,#0b2a3a,#161b22);border:1px solid var(--acc);border-radius:14px;padding:14px;margin-bottom:10px}
+.next .nl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);font-weight:700;margin-bottom:4px}
+.next h3{margin:0 0 4px;font-size:18px;word-break:break-word}
+.next .rel{color:var(--acc);font-weight:600}
+.next .after{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:13px;color:var(--mut);line-height:1.6}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
+.stats button{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 2px;color:var(--txt);font-family:inherit;text-align:center;min-width:0}
+.stats b{font-size:20px;line-height:1.1}
+.stats small{font-size:12px;color:var(--mut)}
+.stats span{display:block;font-size:10.5px;color:var(--mut);margin-top:2px;line-height:1.2}
+.card.past{opacity:.45}
+.chip.nx{color:var(--acc);border-color:var(--acc)}
+#dtab{position:fixed;right:0;top:46%;z-index:12;background:var(--card);border:1px solid var(--acc);border-right:0;border-radius:12px 0 0 12px;padding:10px 6px 10px 8px;font-size:20px;line-height:1;box-shadow:-4px 4px 14px rgba(0,0,0,.45)}
+#dshade{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:25;opacity:0;pointer-events:none;transition:opacity .25s}
+#dshade.open{opacity:1;pointer-events:auto}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(86vw,360px);background:var(--bg);border-left:1px solid var(--line);z-index:26;transform:translateX(105%);transition:transform .28s ease;overflow-y:auto;padding:calc(14px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom))}
+#drawer.open{transform:none}
+.dh{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.dh h2{flex:1;margin:0;font-size:19px}
+.shops{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.shop{position:relative;display:block;text-decoration:none;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 10px;font-weight:600;font-size:15px;word-break:break-word}
+.shop small{display:block;color:var(--acc);font-weight:500;font-size:12px;margin-top:3px}
+.shop .x{position:absolute;top:-7px;right:-7px;width:28px;height:28px;border-radius:50%;border:0;background:var(--bad);color:#fff;font-size:13px;padding:0}
 </style>
 </head>
 <body>
@@ -104,6 +127,9 @@ label.upbtn{display:block;text-align:center;padding:14px;border:1px dashed var(-
 <div id="sheet" onclick="if(event.target.id==='sheet')closeSheet()"><div class="panel" id="panel"></div></div>
 <div id="toast"></div>
 <div id="viewer"></div>
+<button id="dtab" onclick="openDrawer()" style="display:none" aria-label="Boltok">🛍️</button>
+<div id="dshade" onclick="closeDrawer()"></div>
+<div id="drawer"></div>
 
 <script>
 /* ===== BEÁLLÍTÁS: ide másold be az Apps Script webalkalmazás URL-jét ===== */
@@ -190,8 +216,128 @@ function tripBanner(t){
 function tick(){
   let passed=false;
   document.querySelectorAll('[data-cd]').forEach(el=>{ const x=cdRender(new Date(el.dataset.cd),el.dataset.mode); if(!x) passed=true; el.innerHTML=x; });
+  const nb=$('nextbox'), tr=S.items.find(i=>i.id===S.trip && i.type==='trip');
+  if(nb && tr) nb.innerHTML=nextHTML(tr);
   if(passed && !$('sheet').classList.contains('open')) safeRender();
 }
+
+/* ===== Következő program, áttekintés ===== */
+function planDT(i){ return new Date(i.date+'T'+(i.time||'00:00')); }
+function upcomingPlans(t){
+  const now=Date.now(), td=todayStr();
+  return S.items.filter(i=>i.trip===t.id && i.type==='plan' && i.date)
+    .filter(i=> i.time ? planDT(i).getTime() > now-30*60000 : i.date>=td)
+    .sort((a,b)=>planDT(a)-planDT(b) || (a.title||'').localeCompare(b.title||'','hu'));
+}
+function isPastPlan(i){ return i.time ? planDT(i).getTime() < Date.now()-30*60000 : (i.date||'') < todayStr(); }
+function dayWord(d){ const td=todayStr(), tm=new Date(); tm.setDate(tm.getDate()+1); if(d===td) return 'ma'; if(d===ymd(tm)) return 'holnap'; return fd(d); }
+function relWord(i){
+  if(!i.time) return '';
+  const diff=planDT(i).getTime()-Date.now();
+  if(diff<=0) return 'most zajlik';
+  const mins=Math.round(diff/6e4);
+  if(mins<60) return mins+' perc múlva';
+  if(mins<24*60) return Math.floor(mins/60)+' óra '+(mins%60)+' perc múlva';
+  const a=new Date(todayStr()+'T00:00'), b=new Date(i.date+'T00:00');
+  return Math.round((b-a)/864e5)+' nap múlva';
+}
+function nextHTML(t){
+  const up=upcomingPlans(t); if(!up.length) return '';
+  const n=up[0], rel=relWord(n);
+  const after=up.slice(1,3).map(i=>`• ${esc(i.title)} – ${dayWord(i.date)}${i.time?' '+esc(i.time):''}`).join('<br>');
+  return `<div class="next" onclick="setTab('plan')"><div class="nl">⏭ Következő program</div>
+    <h3>${esc(n.title)}</h3>
+    <div class="meta">📅 ${dayWord(n.date)} · ${n.time?esc(n.time):'egész nap'}${rel?` · <span class="rel">${rel}</span>`:''}</div>
+    ${n.address?`<div class="meta">📍 ${esc(addrTxt(n.address))}</div><div class="acts">${mapA(n.address,t)}</div>`:''}
+    ${after?`<div class="after">Utána:<br>${after}</div>`:''}</div>`;
+}
+function statsHTML(t){
+  const its=S.items.filter(i=>i.trip===t.id), of=k=>its.filter(i=>i.type===k);
+  const sg=of('sight'), fo=of('food'), pk=of('pack');
+  const beforeTrip = !t.from || todayStr() < t.from;
+  const c=(tab,big,small,label)=>`<button onclick="setTab('${tab}')"><b>${big}</b>${small?`<small>${small}</small>`:''}<span>${label}</span></button>`;
+  return `<div class="stats">
+    ${c('plan',upcomingPlans(t).length,'','program hátra')}
+    ${c('sight',sg.filter(i=>!i.done).length,sg.length?'/'+sg.length:'','látnivaló hátra')}
+    ${c('food',fo.filter(i=>!i.done).length,fo.length?'/'+fo.length:'','étterem hátra')}
+    ${beforeTrip ? c('pack',pk.filter(i=>i.done).length,'/'+pk.length,'bepakolva') : c('spot',of('spot').length,'','felfedezett hely')}
+  </div>`;
+}
+function overviewHTML(t){ return `<div id="nextbox">${nextHTML(t)}</div>${statsHTML(t)}`; }
+
+/* ===== Boltok oldalpanel ===== */
+const SHOP_CATS=['Ruha','Kozmetika','Élelmiszer','Hasznos','Egyéb'];
+const DEFAULT_SHOPS=[
+  {n:'Zara',c:'Ruha'},{n:'Stradivarius',c:'Ruha'},{n:'Bershka',c:'Ruha'},{n:'Pull&Bear',c:'Ruha'},
+  {n:'Mango',c:'Ruha'},{n:'H&M',c:'Ruha'},{n:'Primark',c:'Ruha'},
+  {n:'Sephora',c:'Kozmetika'},
+  {n:'Szupermarket',c:'Élelmiszer',q:'supermarket'},
+  {n:'Gyógyszertár',c:'Hasznos',q:'pharmacy'},{n:'ATM',c:'Hasznos',q:'ATM'},{n:'Benzinkút',c:'Hasznos',q:'gas station'}
+];
+let GEO=null, GEO_ST='', DE=false;
+function shopUrl(q){
+  const e=encodeURIComponent(q);
+  return GEO ? `https://www.google.com/maps/search/${e}/@${GEO.lat.toFixed(5)},${GEO.lng.toFixed(5)},15z`
+             : `https://www.google.com/maps/search/?api=1&query=${e}`;
+}
+function currentShops(){
+  const s=S.items.filter(i=>i.type==='shop');
+  return s.length ? s : DEFAULT_SHOPS.map((d,ix)=>({id:'def_'+ix,name:d.n,cat:d.c,q:d.q||d.n}));
+}
+function materializeShops(){
+  if(S.items.some(i=>i.type==='shop')) return null;
+  const items=DEFAULT_SHOPS.map(d=>({id:uid(),trip:'',type:'shop',name:d.n,cat:d.c,q:d.q||d.n,author:S.user,created:nowIso()}));
+  queue({a:'saveMany',items});
+  return items;
+}
+function renderDrawer(){
+  const list=currentShops(), g={};
+  list.forEach(s=>{ const c=SHOP_CATS.indexOf(s.cat)>=0?s.cat:'Egyéb'; (g[c]=g[c]||[]).push(s); });
+  let x=`<div class="dh"><h2>🛍️ Legközelebbi helyek</h2><button class="ib" onclick="closeDrawer()">✕</button></div>
+    <div class="meta" style="margin-bottom:10px">${esc(GEO_ST)}</div>
+    <button class="a" style="width:100%;margin-bottom:6px" onclick="DE=!DE;renderDrawer()">${DE?'✓ Kész':'✏️ Szerkesztés'}</button>`;
+  SHOP_CATS.forEach(c=>{
+    if(!g[c]) return;
+    x+=`<div class="sec">${c}</div><div class="shops">`+g[c].sort((a,b)=>(a.name||'').localeCompare(b.name||'','hu')).map(s=>
+      DE ? `<div class="shop">${esc(s.name)}<small>${esc(s.cat||'')}</small><button class="x" onclick="delShop('${s.id}')">✕</button></div>`
+         : `<a class="shop" href="${esc(shopUrl(s.q||s.name))}" target="_blank" rel="noopener">${esc(s.name)}<small>🧭 legközelebbi</small></a>`
+    ).join('')+`</div>`;
+  });
+  x+=`<div class="sec">Új hely hozzáadása</div>
+    <input id="shopname" placeholder="pl. Decathlon, Mercadona, Lidl" enterkeyhint="done" onkeydown="if(event.key==='Enter'){event.preventDefault();addShop()}">
+    <div class="quick" style="margin-top:8px"><select id="shopcat">${SHOP_CATS.map(c=>`<option>${c}</option>`).join('')}</select>
+    <button class="btn p" style="flex:none;padding:12px 18px" onclick="addShop()">+ Hozzáad</button></div>`;
+  $('drawer').innerHTML=x;
+}
+function openDrawer(){
+  DE=false; GEO_ST = GEO ? '📍 A jelenlegi helyzeted alapján' : '📍 Helymeghatározás...';
+  renderDrawer();
+  $('drawer').classList.add('open'); $('dshade').classList.add('open');
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      p=>{ GEO={lat:p.coords.latitude,lng:p.coords.longitude}; GEO_ST='📍 A jelenlegi helyzeted alapján'; if($('drawer').classList.contains('open')) renderDrawer(); },
+      ()=>{ GEO_ST=GEO?'📍 Utolsó ismert helyzet alapján':'📍 A Google Térkép a saját helyzetedhez keres'; if($('drawer').classList.contains('open')) renderDrawer(); },
+      {maximumAge:300000,timeout:8000,enableHighAccuracy:false});
+  } else GEO_ST='📍 A Google Térkép a saját helyzetedhez keres';
+}
+function closeDrawer(){ $('drawer').classList.remove('open'); $('dshade').classList.remove('open'); }
+function addShop(){
+  const name=$('shopname').value.trim(); if(!name){ $('shopname').focus(); return; }
+  materializeShops();
+  queue({a:'save',item:{id:uid(),trip:'',type:'shop',name,cat:$('shopcat').value,q:name,author:S.user,created:nowIso()}});
+  toast(name+' hozzáadva'); renderDrawer();
+}
+function delShop(id){
+  let target=id;
+  if(id.startsWith('def_')){ const items=materializeShops(), ix=Number(id.slice(4)); if(!items) return; target=items[ix].id; }
+  const s=S.items.find(i=>i.id===target);
+  if(!confirm('Törlöd: '+(s?s.name:'')+'?')) return;
+  queue({a:'delete',id:target}); renderDrawer();
+}
+(function(){ let sx=null;
+  document.addEventListener('touchstart',e=>{ if(e.target.closest && e.target.closest('#drawer')) sx=e.touches[0].clientX; else sx=null; },{passive:true});
+  document.addEventListener('touchend',e=>{ if(sx!==null && e.changedTouches[0].clientX-sx>70) closeDrawer(); sx=null; },{passive:true});
+})();
 
 /* ===== Fájlok (beszállókártyák) ===== */
 const IDB={
@@ -322,7 +468,7 @@ async function load(silent){
     }
     if(r.ok){ let items=r.items; S.queue.forEach(op=>{ items=applyOp(items,op); }); S.items=items; persist(); prefetchDocs(); }
   }catch(e){ if(!silent) toast('Nincs kapcsolat – a telefonon tárolt adatokat látod'); }
-  finally{ S.loading=false; safeRender(); }
+  finally{ S.loading=false; safeRender(); const a=document.activeElement; if($('drawer').classList.contains('open') && !(a && a.id==='shopname')) renderDrawer(); }
 }
 function setSync(t){ const el=$('sync'); if(!el) return; el.textContent = t ? ' · '+t : (S.queue.length ? ` · ⏳ ${S.queue.length} mentésre vár` : ''); }
 
@@ -347,7 +493,8 @@ function logout(force){
 function safeRender(){ const a=document.activeElement; if(a && a.id==='qp' && a.value) return; render(); }
 function render(){
   const app=$('app');
-  if(!S.code){ app.innerHTML=loginHTML(); return; }
+  $('dtab').style.display = S.code ? '' : 'none';
+  if(!S.code){ closeDrawer(); app.innerHTML=loginHTML(); return; }
   const trip=S.items.find(i=>i.type==='trip' && i.id===S.trip);
   if(!trip){ S.trip=null; app.innerHTML=tripsHTML(); }
   else app.innerHTML=tripHTML(trip);
@@ -372,7 +519,7 @@ function tripsHTML(){
     h+=`<div class="card ${now?'today':''}" onclick="openTrip('${t.id}')" style="${past?'opacity:.75':''}">
       <div class="row"><div style="flex:1;min-width:0"><h3>${esc(t.name)}</h3>
       <div class="meta">${esc(t.place||'')}${t.place&&t.from?' · ':''}${range(t.from,t.to)}</div></div>
-      ${now?'<span class="chip g">MOST</span>':''}</div>${(()=>{ const tg=tripTarget(t); return tg&&tg>new Date() ? `<div class="cdline" data-cd="${tg.toISOString()}" data-mode="line">${cdRender(tg,'line')}</div>` : ''; })()}<div class="meta" style="margin-top:6px">${n} bejegyzés</div></div>`;
+      ${now?'<span class="chip g">MOST</span>':''}</div>${(()=>{ const tg=tripTarget(t); return tg&&tg>new Date() ? `<div class="cdline" data-cd="${tg.toISOString()}" data-mode="line">${cdRender(tg,'line')}</div>` : ''; })()}${(()=>{ if(past) return ''; const u=upcomingPlans(t)[0]; return u ? `<div class="meta" style="margin-top:6px">⏭ ${esc(u.title)} · ${dayWord(u.date)}${u.time?' '+esc(u.time):''}</div>` : ''; })()}<div class="meta" style="margin-top:6px">${n} bejegyzés</div></div>`;
   });
   return h+`</main><button class="fab" onclick="openForm('trip')">+</button>`;
 }
@@ -381,7 +528,7 @@ function tripHTML(t){
   return `<header><button class="ib" onclick="closeTrip()">←</button>
     <h1>${esc(t.name)}<div class="sub">${range(t.from,t.to)}<span id="sync" class="sync"></span></div></h1>
     <button class="ib" onclick="load()">⟳</button><button class="ib" onclick="editItem('${t.id}')">✏️</button></header>
-    <main>${tripBanner(t)}${R[S.tab](items,t)}</main>
+    <main>${tripBanner(t)}${overviewHTML(t)}${R[S.tab](items,t)}</main>
     <button class="fab" onclick="openForm('${S.tab}')">+</button>
     <nav>${TABS.map(x=>`<button class="${x.k===S.tab?'on':''}" onclick="setTab('${x.k}')"><span>${x.ic}</span>${x.l}</button>`).join('')}</nav>`;
 }
@@ -419,11 +566,12 @@ const R = {
   },
   plan:(items,t)=>{
     if(!items.length) return empty('Még nincs program.<br>Vedd fel, mikor hova mentek!');
-    const today=todayStr(), g={};
+    const today=todayStr(), g={}, nx=(upcomingPlans(t)[0]||{}).id;
     items.forEach(i=>{ (g[i.date||'']=g[i.date||'']||[]).push(i); });
     return Object.keys(g).sort().map(d=>`<div class="sec" style="${d===today?'color:var(--acc)':''}">${d?fd(d):'Nap nélkül'}${d===today?' · MA':''}</div>`+
       g[d].sort((a,b)=>(a.time||'99').localeCompare(b.time||'99')).map(p=>`
-      <div class="card ${d===today?'today':''}" onclick="editItem('${p.id}')">
+      <div class="card ${p.id===nx?'today':''} ${p.id!==nx&&isPastPlan(p)?'past':''}" onclick="editItem('${p.id}')">
+        ${p.id===nx?'<span class="chip nx" style="margin-bottom:8px">⏭ KÖVETKEZŐ</span>':''}
         <div class="row"><div class="time">${esc(p.time||'–')}</div>
         <div style="flex:1;min-width:0"><h3>${esc(p.title)}</h3>${p.address?`<div class="meta">📍 ${esc(addrTxt(p.address))}</div>`:''}</div>${who(p.author)}</div>
         ${noteH(p)}${actsH(p.address,t)}
