@@ -9,6 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Utazásaink">
 <title>Utazásaink</title>
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon512.png">
 <style>
 :root{--bg:#0d1117;--card:#161b22;--card2:#1c232d;--line:#2a3340;--txt:#e6edf3;--mut:#8b98a8;--acc:#38bdf8;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -79,12 +81,29 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc)}
 .quick{display:flex;gap:8px;margin-bottom:10px}
 .quick input{flex:1}
 .quick select{width:105px;flex:none}
+.cd{display:flex;gap:8px;margin:0 0 14px}
+.cd div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 4px;text-align:center}
+.cd b{display:block;font-size:28px;color:var(--acc);font-variant-numeric:tabular-nums;line-height:1.1}
+.cd span{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+.cdline{color:var(--acc);font-size:13px;margin-top:6px;font-weight:600}
+.banner{background:var(--card);border:1px solid var(--acc);color:var(--acc);border-radius:12px;padding:10px;text-align:center;font-weight:600;margin-bottom:12px}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:10px}
+.thumbs .th{position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:#fff;border:1px solid var(--line)}
+.thumbs img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.th .x{position:absolute;top:4px;right:4px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(0,0,0,.75);color:#fff;font-size:14px;padding:0}
+label.upbtn{display:block;text-align:center;padding:14px;border:1px dashed var(--acc);color:var(--acc);border-radius:12px;margin:10px 0 4px;font-size:15px}
+#viewer{position:fixed;inset:0;background:#000;z-index:40;display:none;overflow:auto;-webkit-overflow-scrolling:touch}
+#viewer.open{display:block}
+#viewer img{width:100%;display:block;margin-bottom:10px;background:#fff;min-height:120px}
+#viewer .vx{position:fixed;top:calc(10px + env(safe-area-inset-top));right:12px;width:46px;height:46px;border-radius:50%;background:rgba(50,50,50,.9);color:#fff;border:0;font-size:20px;z-index:41}
+#viewer .vt{color:#fff;padding:calc(20px + env(safe-area-inset-top)) 70px 14px 16px;font-weight:600;font-size:17px}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div id="sheet" onclick="if(event.target.id==='sheet')closeSheet()"><div class="panel" id="panel"></div></div>
 <div id="toast"></div>
+<div id="viewer"></div>
 
 <script>
 /* ===== BEÁLLÍTÁS: ide másold be az Apps Script webalkalmazás URL-jét ===== */
@@ -93,20 +112,22 @@ const API_URL = 'https://script.google.com/macros/s/AKfycby4dLibVnmzHDfwb40Bf_Iq
 /* ===== Adatszerkezet ===== */
 const TABS = [
   {k:'stay',  ic:'🏠', l:'Szállás'},
+  {k:'docs',  ic:'🎫', l:'Jegyek'},
   {k:'plan',  ic:'🗓️', l:'Program'},
   {k:'sight', ic:'📸', l:'Látnivaló'},
   {k:'food',  ic:'🍽️', l:'Vacsora'},
   {k:'spot',  ic:'📍', l:'Helyek'},
   {k:'pack',  ic:'🧳', l:'Pakolás'}
 ];
-const TITLES = {trip:'utazás',stay:'szállás',plan:'program',sight:'látnivaló',food:'étterem',spot:'hely',pack:'tétel'};
+const TITLES = {trip:'utazás',stay:'szállás',plan:'program',sight:'látnivaló',food:'étterem',spot:'hely',pack:'tétel',docs:'jegy / beszállókártya'};
 const F = {
-  trip:[{k:'name',l:'Utazás neve',t:'text',req:1,ph:'pl. Tenerife 2026'},{k:'place',l:'Helyszín',t:'text',ph:'pl. Tenerife'},{k:'from',l:'Indulás',t:'date'},{k:'to',l:'Hazaérkezés',t:'date'},{k:'note',l:'Megjegyzés (járat, autóbérlés...)',t:'area'}],
+  trip:[{k:'name',l:'Utazás neve',t:'text',req:1,ph:'pl. Tenerife 2026'},{k:'place',l:'Helyszín',t:'text',ph:'pl. Tenerife'},{k:'from',l:'Indulás',t:'date'},{k:'time',l:'Indulás időpontja (a visszaszámlálóhoz)',t:'time'},{k:'to',l:'Hazaérkezés',t:'date'},{k:'note',l:'Megjegyzés (járat, autóbérlés...)',t:'area'}],
   stay:[{k:'name',l:'Szállás neve',t:'text',req:1,ph:'pl. Airbnb Los Cristianos'},{k:'address',l:'Cím (vagy Google Maps link)',t:'text'},{k:'code',l:'Belépési kód',t:'text'},{k:'wifi',l:'Wifi (név / jelszó)',t:'text'},{k:'checkin',l:'Bejelentkezés',t:'datetime-local'},{k:'checkout',l:'Kijelentkezés',t:'datetime-local'},{k:'host',l:'Szállásadó / telefon',t:'text'},{k:'link',l:'Foglalás linkje (Airbnb, Booking)',t:'text'},{k:'note',l:'Megjegyzés (parkolás, kulcs...)',t:'area'}],
-  plan:[{k:'date',l:'Nap',t:'date',req:1},{k:'time',l:'Időpont',t:'time'},{k:'title',l:'Mit csinálunk',t:'text',req:1,ph:'pl. Teide felvonó'},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'note',l:'Megjegyzés',t:'area'}],
-  sight:[{k:'title',l:'Látnivaló',t:'text',req:1},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'date',l:'Tervezett nap',t:'date'},{k:'note',l:'Megjegyzés',t:'area'},{k:'done',l:'Megvolt ✓',t:'check'}],
-  food:[{k:'title',l:'Étterem',t:'text',req:1},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'date',l:'Tervezett nap',t:'date'},{k:'note',l:'Megjegyzés (mit érdemes enni, foglalás...)',t:'area'},{k:'done',l:'Voltunk itt ✓',t:'check'},{k:'rating',l:'Értékelés',t:'rating'}],
+  plan:[{k:'date',l:'Nap',t:'day',req:1},{k:'time',l:'Időpont (üresen hagyható)',t:'time'},{k:'title',l:'Mit csinálunk',t:'text',req:1,ph:'pl. Teide felvonó'},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'note',l:'Megjegyzés',t:'area'}],
+  sight:[{k:'title',l:'Látnivaló',t:'text',req:1},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'date',l:'Tervezett nap',t:'day'},{k:'note',l:'Megjegyzés',t:'area'},{k:'done',l:'Megvolt ✓',t:'check'}],
+  food:[{k:'title',l:'Étterem',t:'text',req:1},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'date',l:'Tervezett nap',t:'day'},{k:'note',l:'Megjegyzés (mit érdemes enni, foglalás...)',t:'area'},{k:'done',l:'Voltunk itt ✓',t:'check'},{k:'rating',l:'Értékelés',t:'rating'}],
   spot:[{k:'title',l:'Hely neve',t:'text',req:1},{k:'cat',l:'Típus',t:'select',o:['Strand','Kávézó','Étterem','Bár','Bolt','Kilátó','Túra','Egyéb']},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'note',l:'Megjegyzés',t:'area'}],
+  docs:[{k:'title',l:'Megnevezés',t:'text',req:1,ph:'pl. Oda – FR 1234, Gábor'},{k:'who',l:'Kié',t:'select',o:['Közös','Gábor','Réka']},{k:'date',l:'Nap',t:'day'},{k:'time',l:'Indulás ideje',t:'time'},{k:'files',l:'Beszállókártya / jegy (kép vagy PDF)',t:'files'},{k:'note',l:'Megjegyzés (kapu, ülés, poggyász...)',t:'area'}],
   pack:[{k:'title',l:'Tétel',t:'text',req:1},{k:'who',l:'Kié',t:'select',o:['Közös','Gábor','Réka']},{k:'done',l:'Bepakolva ✓',t:'check'}]
 };
 
@@ -126,7 +147,10 @@ const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : D
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const nowIso = () => new Date().toISOString();
 function toast(t){ const el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('show'),2400); }
-function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function todayStr(){ return ymd(new Date()); }
+function tripDays(t){ if(!t||!t.from||!t.to) return []; const out=[], d=new Date(t.from+'T00:00'), end=new Date(t.to+'T00:00'); if(isNaN(d)||isNaN(end)) return []; while(d<=end && out.length<120){ out.push(ymd(d)); d.setDate(d.getDate()+1); } return out; }
+const clearBtn = id => `<button type="button" class="ib" style="height:48px;width:48px" title="Törlés" onclick="$('${id}').value=''">✕</button>`;
 function fd(s){ if(!s) return ''; const d=new Date(s+'T00:00'); if(isNaN(d)) return esc(s); return d.toLocaleDateString('hu-HU',{month:'short',day:'numeric',weekday:'long'}); }
 function fdt(s){ if(!s) return ''; const d=new Date(s); if(isNaN(d)) return s; return d.toLocaleString('hu-HU',{month:'short',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'}); }
 function range(a,b){ const f=s=>{const d=new Date(s+'T00:00'); return isNaN(d)?s:d.toLocaleDateString('hu-HU',{year:'numeric',month:'short',day:'numeric'});}; if(a&&b) return f(a)+' – '+f(b); return a?f(a):''; }
@@ -140,6 +164,120 @@ const noteH = i => i.note ? `<div class="note">${esc(i.note)}</div>` : '';
 const mapA = (addr,t) => addr ? `<a class="a" href="${esc(mapUrl(addr,t))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Térkép</a>` : '';
 const actsH = (addr,t) => addr ? `<div class="acts">${mapA(addr,t)}</div>` : '';
 const addrTxt = a => /^https?:\/\//i.test(a||'') ? 'Térkép link' : (a||'');
+
+/* ===== Visszaszámláló ===== */
+function addM(date,n){ const x=new Date(date), day=x.getDate(); x.setMonth(x.getMonth()+n); if(x.getDate()<day) x.setDate(0); return x; }
+function tripTarget(t){ if(!t||!t.from) return null; const d=new Date(t.from+'T'+(t.time||'00:00')); return isNaN(d)?null:d; }
+function cd(target){
+  const now=new Date(); if(!target||target<=now) return null;
+  let m=0; while(addM(now,m+1)<=target) m++;
+  let ms=target-addM(now,m);
+  const d=Math.floor(ms/864e5); ms-=d*864e5;
+  const hh=Math.floor(ms/36e5); ms-=hh*36e5;
+  return {m,d,h:hh,mi:Math.floor(ms/6e4)};
+}
+function cdRender(target,mode){
+  const p=cd(target); if(!p) return '';
+  if(mode==='line') return '⏳ még '+(p.m?p.m+' hónap ':'')+p.d+' nap '+p.h+' óra';
+  return [['Hónap',p.m],['Nap',p.d],['Óra',p.h],['Perc',p.mi]].map(([l,v])=>`<div><b>${v}</b><span>${l}</span></div>`).join('');
+}
+function tripBanner(t){
+  const tg=tripTarget(t);
+  if(tg && tg>new Date()) return `<div class="sec" style="text-align:center">✈️ Indulásig</div><div class="cd" data-cd="${tg.toISOString()}" data-mode="big">${cdRender(tg,'big')}</div>`;
+  const days=tripDays(t), ix=days.indexOf(todayStr());
+  return ix>=0 ? `<div class="banner">🌴 Nyaralás: ${ix+1}. nap / ${days.length}</div>` : '';
+}
+function tick(){
+  let passed=false;
+  document.querySelectorAll('[data-cd]').forEach(el=>{ const x=cdRender(new Date(el.dataset.cd),el.dataset.mode); if(!x) passed=true; el.innerHTML=x; });
+  if(passed && !$('sheet').classList.contains('open')) safeRender();
+}
+
+/* ===== Fájlok (beszállókártyák) ===== */
+const IDB={
+  db:null,
+  open(){ return this.db || (this.db=new Promise((res,rej)=>{ const r=indexedDB.open('utazasaink',1); r.onupgradeneeded=()=>r.result.createObjectStore('files'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); })); },
+  async get(k){ try{ const db=await this.open(); return await new Promise(res=>{ const q=db.transaction('files').objectStore('files').get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>res(undefined); }); }catch(e){ return undefined; } },
+  async set(k,v){ try{ const db=await this.open(); await new Promise(res=>{ const tx=db.transaction('files','readwrite'); tx.objectStore('files').put(v,k); tx.oncomplete=res; tx.onerror=res; }); }catch(e){} }
+};
+const MEM={}, PEND={};
+function getImg(id){
+  if(MEM[id]) return Promise.resolve(MEM[id]);
+  if(PEND[id]) return PEND[id];
+  return PEND[id]=(async()=>{
+    let u=await IDB.get(id);
+    if(!u){ try{ const r=await api('file',{id}); if(r.ok){ u=`data:${r.mime||'image/jpeg'};base64,${r.data}`; IDB.set(id,u); } }catch(e){} }
+    if(u) MEM[id]=u;
+    delete PEND[id];
+    return u;
+  })();
+}
+function hydrate(root){
+  (root||document).querySelectorAll('img[data-fid]').forEach(async el=>{
+    if(el.getAttribute('src')) return;
+    const u=await getImg(el.dataset.fid);
+    if(u) el.src=u; else el.alt='Nem elérhető (nincs net)';
+  });
+}
+async function prefetchDocs(){
+  const ids=[...new Set(S.items.filter(i=>i.type==='docs').flatMap(i=>i.files||[]))];
+  for(const id of ids){ if(!MEM[id]) await getImg(id); }
+}
+function loadImg(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+function toJpeg(src,w,h){
+  const s=Math.min(1,2000/Math.max(w,h)), c=document.createElement('canvas');
+  c.width=Math.round(w*s); c.height=Math.round(h*s);
+  const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(src,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',0.88);
+}
+async function loadPdfJs(){
+  if(window.pdfjsLib) return;
+  await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+async function fileToImages(file){
+  if(file.type==='application/pdf' || /\.pdf$/i.test(file.name)){
+    await loadPdfJs();
+    const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise, out=[];
+    for(let n=1; n<=Math.min(pdf.numPages,6); n++){
+      const page=await pdf.getPage(n), v1=page.getViewport({scale:1});
+      const vp=page.getViewport({scale:Math.min(3,2000/Math.max(v1.width,v1.height))});
+      const c=document.createElement('canvas'); c.width=Math.round(vp.width); c.height=Math.round(vp.height);
+      const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height);
+      await page.render({canvasContext:x,viewport:vp}).promise;
+      out.push(c.toDataURL('image/jpeg',0.9));
+    }
+    return out;
+  }
+  const url=URL.createObjectURL(file);
+  try{ const img=await loadImg(url); return [toJpeg(img,img.naturalWidth,img.naturalHeight)]; }
+  finally{ URL.revokeObjectURL(url); }
+}
+function renderFilesBox(){
+  const b=$('filesbox'); if(!b||!FORM) return;
+  b.innerHTML=`<div class="thumbs">${FORM.files.map((id,i)=>`<div class="th"><img data-fid="${id}" alt=""><button type="button" class="x" onclick="rmFile(0,${i})">✕</button></div>`).join('')}${FORM.newFiles.map((u,i)=>`<div class="th"><img src="${u}" alt=""><button type="button" class="x" onclick="rmFile(1,${i})">✕</button></div>`).join('')}</div>
+    <label class="upbtn">📎 Kép vagy PDF hozzáadása<input type="file" accept="image/*,application/pdf" multiple style="display:none" onchange="addFiles(this)"></label><div id="fstat" class="meta"></div>`;
+  hydrate(b);
+}
+function rmFile(kind,i){ if(!FORM) return; (kind?FORM.newFiles:FORM.files).splice(i,1); renderFilesBox(); }
+async function addFiles(inp){
+  const FM=FORM, files=[...inp.files]; if(!FM||!files.length) return;
+  $('fstat').textContent='Feldolgozás...';
+  for(const f of files){
+    try{ const imgs=await fileToImages(f); FM.newFiles.push(...imgs); }
+    catch(e){ toast('Nem sikerült beolvasni: '+f.name); }
+  }
+  if(FORM===FM) renderFilesBox();
+}
+let WL=null;
+async function openViewer(id){
+  const it=S.items.find(i=>i.id===id); if(!it||!(it.files||[]).length) return;
+  const v=$('viewer');
+  v.innerHTML=`<button class="vx" onclick="closeViewer()">✕</button><div class="vt">🎫 ${esc(it.title)}${it.time?' · '+esc(it.time):''}</div>${it.files.map(f=>`<img data-fid="${f}" alt="Betöltés...">`).join('')}`;
+  v.classList.add('open'); v.scrollTop=0; hydrate(v);
+  try{ WL=await navigator.wakeLock.request('screen'); }catch(e){}
+}
+function closeViewer(){ $('viewer').classList.remove('open'); try{ WL&&WL.release(); }catch(e){} WL=null; }
 
 /* ===== Szerver ===== */
 async function api(action, payload={}){
@@ -182,7 +320,7 @@ async function load(silent){
       await flush();
       return;
     }
-    if(r.ok){ let items=r.items; S.queue.forEach(op=>{ items=applyOp(items,op); }); S.items=items; persist(); }
+    if(r.ok){ let items=r.items; S.queue.forEach(op=>{ items=applyOp(items,op); }); S.items=items; persist(); prefetchDocs(); }
   }catch(e){ if(!silent) toast('Nincs kapcsolat – a telefonon tárolt adatokat látod'); }
   finally{ S.loading=false; safeRender(); }
 }
@@ -214,6 +352,7 @@ function render(){
   if(!trip){ S.trip=null; app.innerHTML=tripsHTML(); }
   else app.innerHTML=tripHTML(trip);
   setSync();
+  hydrate();
 }
 function loginHTML(){
   return `<div class="login"><div style="font-size:56px">✈️</div><h1>Utazásaink</h1><div class="meta">Gábor & Réka</div>
@@ -233,7 +372,7 @@ function tripsHTML(){
     h+=`<div class="card ${now?'today':''}" onclick="openTrip('${t.id}')" style="${past?'opacity:.75':''}">
       <div class="row"><div style="flex:1;min-width:0"><h3>${esc(t.name)}</h3>
       <div class="meta">${esc(t.place||'')}${t.place&&t.from?' · ':''}${range(t.from,t.to)}</div></div>
-      ${now?'<span class="chip g">MOST</span>':''}</div><div class="meta" style="margin-top:6px">${n} bejegyzés</div></div>`;
+      ${now?'<span class="chip g">MOST</span>':''}</div>${(()=>{ const tg=tripTarget(t); return tg&&tg>new Date() ? `<div class="cdline" data-cd="${tg.toISOString()}" data-mode="line">${cdRender(tg,'line')}</div>` : ''; })()}<div class="meta" style="margin-top:6px">${n} bejegyzés</div></div>`;
   });
   return h+`</main><button class="fab" onclick="openForm('trip')">+</button>`;
 }
@@ -242,7 +381,7 @@ function tripHTML(t){
   return `<header><button class="ib" onclick="closeTrip()">←</button>
     <h1>${esc(t.name)}<div class="sub">${range(t.from,t.to)}<span id="sync" class="sync"></span></div></h1>
     <button class="ib" onclick="load()">⟳</button><button class="ib" onclick="editItem('${t.id}')">✏️</button></header>
-    <main>${R[S.tab](items,t)}</main>
+    <main>${tripBanner(t)}${R[S.tab](items,t)}</main>
     <button class="fab" onclick="openForm('${S.tab}')">+</button>
     <nav>${TABS.map(x=>`<button class="${x.k===S.tab?'on':''}" onclick="setTab('${x.k}')"><span>${x.ic}</span>${x.l}</button>`).join('')}</nav>`;
 }
@@ -300,6 +439,19 @@ const R = {
         <div class="meta">${i.cat?`<span class="chip">${esc(i.cat)}</span> `:''}${esc(addrTxt(i.address))}</div></div>${who(i.author)}</div>
         ${noteH(i)}${actsH(i.address,t)}
       </div>`).join('');
+  },
+  docs:(items,t)=>{
+    if(!items.length) return empty('Ide töltsétek fel a beszállókártyákat és jegyeket.<br>Képet (képernyőfotót) és PDF-et is elfogad.<br>Feltöltés után net nélkül is megnyílnak.');
+    return items.sort((a,b)=>((a.date||'9999')+(a.time||'')).localeCompare((b.date||'9999')+(b.time||''))).map(i=>{
+      const meta=[i.who&&i.who!=='Közös'?esc(i.who):'', i.date?fd(i.date):'', i.time?esc(i.time):''].filter(Boolean).join(' · ');
+      const fl=i.files||[];
+      return `<div class="card" onclick="editItem('${i.id}')">
+        <div class="row"><div style="flex:1;min-width:0"><h3>🎫 ${esc(i.title)}</h3>${meta?`<div class="meta">${meta}</div>`:''}</div>${who(i.author)}</div>
+        ${noteH(i)}
+        ${fl.length?`<div class="thumbs" onclick="event.stopPropagation();openViewer('${i.id}')">${fl.map(f=>`<div class="th"><img data-fid="${f}" alt=""></div>`).join('')}</div>
+        <button class="a" style="width:100%;margin-top:10px" onclick="event.stopPropagation();openViewer('${i.id}')">📱 Megnyitás teljes képernyőn</button>`:''}
+      </div>`;
+    }).join('');
   },
   pack:(items,t)=>{
     const n=items.length, d=items.filter(i=>i.done).length;
@@ -367,7 +519,7 @@ function openForm(type,item){
   const it=item ? Object.assign({},item) : {type, trip: type==='trip' ? '' : S.trip};
   if(isNew && type==='plan') it.date=defDate(t);
   if(isNew && type==='pack') it.who=QW;
-  FORM={it,isNew};
+  FORM={it,isNew,files:(it.files||[]).slice(),newFiles:[],busy:false};
   let h=`<h2>${isNew ? 'Új '+TITLES[type] : cap(TITLES[type])+' szerkesztése'}</h2>`;
   if(!isNew && it.author) h+=`<div class="meta">Felvette: ${esc(it.author)}</div>`;
   F[type].forEach(f=>{
@@ -375,24 +527,60 @@ function openForm(type,item){
     if(f.t==='check') h+=`<label class="sw"><input type="checkbox" id="f_${f.k}" ${v?'checked':''}> ${f.l}</label>`;
     else if(f.t==='rating') h+=`<label>${f.l}</label><div class="stars" id="stars">${[1,2,3,4,5].map(n=>`<button type="button" class="${n<=(Number(v)||0)?'on':''}" onclick="setStar(${n})">★</button>`).join('')}</div><input type="hidden" id="f_${f.k}" value="${Number(v)||0}">`;
     else if(f.t==='select') h+=`<label>${f.l}</label><select id="f_${f.k}">${f.o.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select>`;
+    else if(f.t==='day'){
+      const days=tripDays(t);
+      if(days.length){
+        let opts=f.req?'':`<option value="" ${!v?'selected':''}>— Nincs tervezett nap —</option>`;
+        if(v && days.indexOf(v)<0) opts+=`<option value="${esc(v)}" selected>${fd(v)}</option>`;
+        opts+=days.map((d,i)=>`<option value="${d}" ${d===v?'selected':''}>${i+1}. nap · ${fd(d)}</option>`).join('');
+        h+=`<label>${f.l}${f.req?' *':''}</label><select id="f_${f.k}">${opts}</select>`;
+      } else {
+        h+=`<label>${f.l}${f.req?' *':''}</label><div class="quick"><input type="date" id="f_${f.k}" value="${esc(v)}">${f.req?'':clearBtn('f_'+f.k)}</div>`;
+      }
+    }
+    else if(f.t==='time') h+=`<label>${f.l}</label><div class="quick"><input type="time" id="f_${f.k}" value="${esc(v)}">${clearBtn('f_'+f.k)}</div>`;
+    else if(f.t==='files') h+=`<label>${f.l}</label><div id="filesbox"></div>`;
     else if(f.t==='area') h+=`<label>${f.l}</label><textarea id="f_${f.k}">${esc(v)}</textarea>`;
     else h+=`<label>${f.l}${f.req?' *':''}</label><input type="${f.t}" id="f_${f.k}" value="${esc(v)}" ${f.ph?`placeholder="${esc(f.ph)}"`:''}>`;
   });
-  h+=`<div class="btns">${isNew?'':`<button class="btn d" onclick="delItem()">🗑</button>`}<button class="btn" onclick="closeSheet()">Mégse</button><button class="btn p" onclick="saveForm()">Mentés</button></div>`;
+  h+=`<div class="btns">${isNew?'':`<button class="btn d" onclick="delItem()">🗑</button>`}<button class="btn" onclick="closeSheet()">Mégse</button><button class="btn p" id="savebtn" onclick="saveForm()">Mentés</button></div>`;
   openSheet(h);
+  renderFilesBox();
 }
 function setStar(n){
   const inp=$('f_rating'); const v = Number(inp.value)===n ? 0 : n; inp.value=v;
   [...$('stars').children].forEach((b,i)=>b.classList.toggle('on', i<v));
 }
-function saveForm(){
-  if(!FORM) return;
-  const {it,isNew}=FORM, o=Object.assign({},it);
+async function saveForm(){
+  const FM=FORM; if(!FM||FM.busy) return;
+  const {it,isNew}=FM, o=Object.assign({},it);
   for(const f of F[it.type]){
+    if(f.t==='files') continue;
     const el=$('f_'+f.k);
     const v = f.t==='check' ? el.checked : f.t==='rating' ? Number(el.value) : el.value.trim();
     if(f.req && !v){ toast('Kötelező: '+f.l); el.focus(); return; }
     o[f.k]=v;
+  }
+  if(F[it.type].some(f=>f.t==='files')){
+    if(FM.newFiles.length){
+      const btn=$('savebtn'); FM.busy=true; btn.disabled=true;
+      try{
+        while(FM.newFiles.length){
+          btn.textContent=`Feltöltés... (${FM.newFiles.length})`;
+          const u=FM.newFiles[0];
+          const r=await api('upload',{data:u.split(',')[1],mime:'image/jpeg',name:(o.title||'jegy')+'.jpg'});
+          if(!r.ok) throw new Error(r.error||'szerverhiba');
+          MEM[r.id]=u; IDB.set(r.id,u);
+          FM.files.push(r.id); FM.newFiles.shift();
+        }
+      }catch(e){
+        FM.busy=false; toast('Feltöltés sikertelen – van internet? '+(e.message||''));
+        if(FORM===FM){ btn.disabled=false; btn.textContent='Mentés'; renderFilesBox(); }
+        return;
+      }
+      FM.busy=false;
+    }
+    o.files=FM.files.slice();
   }
   if(isNew){ o.id=uid(); o.author=S.user; o.created=nowIso(); }
   closeSheet();
@@ -413,6 +601,7 @@ render();
 if(S.code) load(true);
 setInterval(()=>{ if(S.code && !document.hidden && !$('sheet').classList.contains('open')) load(true); }, 60000);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden && S.code) load(true); });
+setInterval(tick,30000);
 window.addEventListener('online',()=>{ if(S.code) load(true); });
 </script>
 </body>
