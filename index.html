@@ -33,8 +33,8 @@ main{padding:14px 16px}
 .sec{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:18px 2px 8px;font-weight:600}
 .sec:first-child{margin-top:4px}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:rgba(22,27,34,.97);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:10}
-nav button{flex:1;background:none;border:0;color:var(--mut);padding:8px 0 7px;font-size:10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit}
-nav button span{font-size:20px;filter:grayscale(1);opacity:.7}
+nav button{flex:1;min-width:0;background:none;border:0;color:var(--mut);padding:8px 0 7px;font-size:9.5px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit}
+nav button span{font-size:19px;filter:grayscale(1);opacity:.7}
 nav button.on{color:var(--acc)}
 nav button.on span{filter:none;opacity:1}
 .fab{position:fixed;right:16px;bottom:calc(78px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:var(--acc);color:#04111a;border:0;font-size:32px;line-height:1;box-shadow:0 6px 20px rgba(0,0,0,.55);z-index:11}
@@ -122,6 +122,31 @@ label.upbtn{display:block;text-align:center;padding:14px;border:1px dashed var(-
 .shop .x{position:absolute;top:-7px;right:-7px;width:28px;height:28px;border-radius:50%;border:0;background:var(--bad);color:#fff;font-size:13px;padding:0}
 .spin{animation:spin .9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.tl{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line);color:var(--txt);font-size:14px;align-items:flex-start}
+.tt{min-width:84px;color:var(--acc);font-size:12px;font-weight:600;line-height:1.35}
+.dayh{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);font-weight:700;margin-bottom:2px}
+.dayh.td{color:var(--acc)}
+.idea{background:var(--card);border:1px dashed #3b4a5c;border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.idea .tl:first-of-type{border-top:0}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.pick button{padding:16px 8px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:15px;font-family:inherit}
+#ctab{position:fixed;right:0;top:calc(46% + 50px);z-index:12;background:var(--card);border:1px solid var(--acc);border-right:0;border-radius:12px 0 0 12px;padding:10px 6px 10px 8px;font-size:20px;line-height:1;box-shadow:-4px 4px 14px rgba(0,0,0,.45)}
+#drawer.wide{width:min(94vw,440px)}
+.calnav{display:flex;gap:6px;margin:4px 0 6px}
+.calnav button{flex:1;padding:9px 4px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:13px;font-family:inherit}
+.calh{font-size:15px;font-weight:700;margin:16px 0 4px}
+.calh.td{color:var(--acc)}
+.cal{position:relative;margin:10px 0 8px}
+.hr{position:absolute;left:0;right:0;border-top:1px solid var(--line)}
+.hr span{position:absolute;left:0;top:-8px;font-size:10px;color:var(--mut);background:var(--bg);padding-right:4px;font-variant-numeric:tabular-nums}
+.ev{position:absolute;border-radius:8px;padding:4px 6px;font-size:12px;overflow:hidden;color:#04111a;line-height:1.25;box-shadow:0 2px 6px rgba(0,0,0,.45);z-index:1}
+.ev b{font-weight:800}
+.k-plan{background:#38bdf8}.k-food{background:#fb923c}.k-sight{background:#34d399}.k-docs{background:#c084fc}.k-stay{background:#94a3b8}
+.ev.dn{opacity:.5;text-decoration:line-through}
+.nowl{position:absolute;left:38px;right:0;border-top:2px solid #f87171;z-index:2;pointer-events:none}
+.nowl:before{content:'';position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:#f87171}
+.alld{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
+.alld span{border-radius:8px;padding:4px 8px;font-size:12px;color:#04111a;font-weight:600}
 </style>
 </head>
 <body>
@@ -130,16 +155,18 @@ label.upbtn{display:block;text-align:center;padding:14px;border:1px dashed var(-
 <div id="toast"></div>
 <div id="viewer"></div>
 <button id="dtab" onclick="openDrawer()" style="display:none" aria-label="Boltok">🛍️</button>
+<button id="ctab" onclick="openCal()" style="display:none" aria-label="Napi nézet">📅</button>
 <div id="dshade" onclick="closeDrawer()"></div>
 <div id="drawer"></div>
 
 <script>
-const APP_VER = '2026-10-12-1710';
+const APP_VER = '2026-10-12-1835';
 /* ===== BEÁLLÍTÁS: ide másold be az Apps Script webalkalmazás URL-jét ===== */
 const API_URL = 'https://script.google.com/macros/s/AKfycby4dLibVnmzHDfwb40Bf_IqJKU7P5bgRMQMjBzvYXFyUAFlCTL5tdKGQ7-zngD58J_27Q/exec';
 
 /* ===== Adatszerkezet ===== */
 const TABS = [
+  {k:'home',  ic:'🧭', l:'Főoldal'},
   {k:'stay',  ic:'🏠', l:'Szállás'},
   {k:'docs',  ic:'🎫', l:'Jegyek'},
   {k:'plan',  ic:'🗓️', l:'Program'},
@@ -152,9 +179,9 @@ const TITLES = {trip:'utazás',stay:'szállás',plan:'program',sight:'látnival�
 const F = {
   trip:[{k:'name',l:'Utazás neve',t:'text',req:1,ph:'pl. Tenerife 2026'},{k:'place',l:'Helyszín',t:'text',ph:'pl. Tenerife'},{k:'from',l:'Indulás',t:'date'},{k:'time',l:'Indulás időpontja (a visszaszámlálóhoz)',t:'time'},{k:'to',l:'Hazaérkezés',t:'date'},{k:'note',l:'Megjegyzés (járat, autóbérlés...)',t:'area'}],
   stay:[{k:'name',l:'Szállás neve',t:'text',req:1,ph:'pl. Airbnb Los Cristianos'},{k:'address',l:'Cím (vagy Google Maps link)',t:'text'},{k:'code',l:'Belépési kód',t:'text'},{k:'wifi',l:'Wifi (név / jelszó)',t:'text'},{k:'checkin',l:'Bejelentkezés',t:'datetime-local'},{k:'checkout',l:'Kijelentkezés',t:'datetime-local'},{k:'host',l:'Szállásadó / telefon',t:'text'},{k:'link',l:'Foglalás linkje (Airbnb, Booking)',t:'text'},{k:'note',l:'Megjegyzés (parkolás, kulcs...)',t:'area'}],
-  plan:[{k:'date',l:'Nap',t:'day',req:1},{k:'time',l:'Időpont (üresen hagyható)',t:'time'},{k:'title',l:'Mit csinálunk',t:'text',req:1,ph:'pl. Teide felvonó'},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'note',l:'Megjegyzés',t:'area'}],
-  sight:[{k:'title',l:'Látnivaló',t:'text',req:1},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'date',l:'Tervezett nap',t:'day'},{k:'note',l:'Megjegyzés',t:'area'},{k:'done',l:'Megvolt ✓',t:'check'}],
-  food:[{k:'title',l:'Étterem',t:'text',req:1},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'date',l:'Tervezett nap',t:'day'},{k:'note',l:'Megjegyzés (mit érdemes enni, foglalás...)',t:'area'},{k:'done',l:'Voltunk itt ✓',t:'check'},{k:'rating',l:'Értékelés',t:'rating'}],
+  plan:[{k:'date',l:'Nap (ha még nincs, maradhat üresen)',t:'day'},{k:'time',l:'Időpont (üresen hagyható)',t:'time'},{k:'title',l:'Mit csinálunk',t:'text',req:1,ph:'pl. Teide felvonó'},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'note',l:'Megjegyzés',t:'area'}],
+  sight:[{k:'title',l:'Látnivaló',t:'text',req:1},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'date',l:'Tervezett nap',t:'day'},{k:'time',l:'Időpont (üresen hagyható)',t:'time'},{k:'note',l:'Megjegyzés',t:'area'},{k:'done',l:'Megvolt ✓',t:'check'}],
+  food:[{k:'title',l:'Étterem',t:'text',req:1},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'date',l:'Tervezett nap',t:'day'},{k:'time',l:'Időpont / foglalás (üresen hagyható)',t:'time'},{k:'note',l:'Megjegyzés (mit érdemes enni, foglalás...)',t:'area'},{k:'done',l:'Voltunk itt ✓',t:'check'},{k:'rating',l:'Értékelés',t:'rating'}],
   spot:[{k:'title',l:'Hely neve',t:'text',req:1},{k:'cat',l:'Típus',t:'select',o:['Strand','Kávézó','Étterem','Bár','Bolt','Kilátó','Túra','Egyéb']},{k:'address',l:'Hol (cím, hely neve vagy Maps link)',t:'text'},{k:'note',l:'Megjegyzés',t:'area'}],
   docs:[{k:'title',l:'Megnevezés',t:'text',req:1,ph:'pl. Oda – FR 1234, Gábor'},{k:'who',l:'Kié',t:'select',o:['Közös','Gábor','Réka']},{k:'date',l:'Nap',t:'day'},{k:'time',l:'Indulás ideje',t:'time'},{k:'files',l:'Beszállókártya / jegy (kép vagy PDF)',t:'files'},{k:'note',l:'Megjegyzés (kapu, ülés, poggyász...)',t:'area'}],
   pack:[{k:'title',l:'Tétel',t:'text',req:1},{k:'who',l:'Kié',t:'select',o:['Közös','Gábor','Réka']},{k:'done',l:'Bepakolva ✓',t:'check'}]
@@ -219,21 +246,33 @@ function tripBanner(t){
 function tick(){
   let passed=false;
   document.querySelectorAll('[data-cd]').forEach(el=>{ const x=cdRender(new Date(el.dataset.cd),el.dataset.mode); if(!x) passed=true; el.innerHTML=x; });
+  if(DMODE==='cal' && $('drawer').classList.contains('open')){ const sc=$('drawer').scrollTop; renderCal(); $('drawer').scrollTop=sc; }
   const nb=$('nextbox'), tr=S.items.find(i=>i.id===S.trip && i.type==='trip');
-  if(nb && tr) nb.innerHTML=nextHTML(tr);
+  if(nb && tr) nb.innerHTML=nextHTML(tr, true);
   if(passed && !$('sheet').classList.contains('open')) safeRender();
 }
 
 /* ===== Következő program, áttekintés ===== */
 function planDT(i){ return new Date(i.date+'T'+(i.time||'00:00')); }
-function upcomingPlans(t){
-  const now=Date.now(), td=todayStr();
-  return S.items.filter(i=>i.trip===t.id && i.type==='plan' && i.date)
-    .filter(i=> i.time ? planDT(i).getTime() > now-30*60000 : i.date>=td)
-    .sort((a,b)=>planDT(a)-planDT(b) || (a.title||'').localeCompare(b.title||'','hu'));
+const KIND={plan:['🗓️','Program'],sight:['📸','Látnivaló'],food:['🍽️','Étterem'],docs:['🎫','Jegy'],stay:['🏠','Szállás'],spot:['📍','Felfedezett hely']};
+function timeline(t, withDone){
+  const out=[], E=(it,date,time,title,key)=>({it,date,time:time||'',title:title||'',key,icon:KIND[it.type][0],kind:KIND[it.type][1],address:it.address||''});
+  S.items.filter(i=>i.trip===t.id).forEach(i=>{
+    if(i.type==='plan' && i.date) out.push(E(i,i.date,i.time,i.title,i.id));
+    else if((i.type==='sight'||i.type==='food') && i.date && (withDone || !i.done)) out.push(E(i,i.date,i.time,i.title,i.id));
+    else if(i.type==='docs' && i.date) out.push(E(i,i.date,i.time,i.title,i.id));
+    else if(i.type==='stay'){
+      if(i.checkin)  out.push(E(i,i.checkin.slice(0,10), i.checkin.slice(11,16), 'Bejelentkezés – '+i.name, i.id+':in'));
+      if(i.checkout) out.push(E(i,i.checkout.slice(0,10),i.checkout.slice(11,16),'Kijelentkezés – '+i.name, i.id+':out'));
+    }
+  });
+  return out.sort((a,b)=>planDT(a)-planDT(b) || a.title.localeCompare(b.title,'hu'));
 }
-function isPastPlan(i){ return i.time ? planDT(i).getTime() < Date.now()-30*60000 : (i.date||'') < todayStr(); }
+function isPastE(e){ if(e.it.done) return true; return e.time ? planDT(e).getTime() < Date.now()-30*60000 : e.date < todayStr(); }
+function upcoming(t){ return timeline(t,false).filter(e=>!isPastE(e)); }
+function fdShort(s){ const d=new Date(s+'T00:00'); return isNaN(d)?esc(s):d.toLocaleDateString('hu-HU',{month:'short',day:'numeric',weekday:'short'}); }
 function dayWord(d){ const td=todayStr(), tm=new Date(); tm.setDate(tm.getDate()+1); if(d===td) return 'ma'; if(d===ymd(tm)) return 'holnap'; return fd(d); }
+function dayShort(d){ const td=todayStr(), tm=new Date(); tm.setDate(tm.getDate()+1); if(d===td) return 'Ma'; if(d===ymd(tm)) return 'Holnap'; return fdShort(d); }
 function relWord(i){
   if(!i.time) return '';
   const diff=planDT(i).getTime()-Date.now();
@@ -244,15 +283,21 @@ function relWord(i){
   const a=new Date(todayStr()+'T00:00'), b=new Date(i.date+'T00:00');
   return Math.round((b-a)/864e5)+' nap múlva';
 }
-function nextHTML(t){
-  const up=upcomingPlans(t); if(!up.length) return '';
-  const n=up[0], rel=relWord(n);
-  const after=up.slice(1,3).map(i=>`• ${esc(i.title)} – ${dayWord(i.date)}${i.time?' '+esc(i.time):''}`).join('<br>');
-  return `<div class="next" onclick="setTab('plan')"><div class="nl">⏭ Következő program</div>
-    <h3>${esc(n.title)}</h3>
-    <div class="meta">📅 ${dayWord(n.date)} · ${n.time?esc(n.time):'egész nap'}${rel?` · <span class="rel">${rel}</span>`:''}</div>
-    ${n.address?`<div class="meta">📍 ${esc(addrTxt(n.address))}</div><div class="acts">${mapA(n.address,t)}</div>`:''}
-    ${after?`<div class="after">Utána:<br>${after}</div>`:''}</div>`;
+function nextHTML(t, compact){
+  const up=upcoming(t); if(!up.length) return '';
+  const n=up[0], rel=relWord(n), now = n.time && planDT(n).getTime()<=Date.now();
+  const rest=compact?[]:up.slice(1,7);
+  const list=rest.map(e=>`<div class="tl" onclick="event.stopPropagation();editItem('${e.it.id}')">
+      <div class="tt">${dayShort(e.date)}<br>${e.time?esc(e.time):'egész nap'}</div>
+      <div style="flex:1;min-width:0">${e.icon} ${esc(e.title)}${e.it.type!=='plan'?` <span class="meta">· ${e.kind}</span>`:''}</div></div>`).join('');
+  const more = !compact && up.length>7 ? `<div class="meta" style="margin-top:8px">+ még ${up.length-7} esemény – koppints ide az összeshez</div>` : '';
+  return `<div class="next" onclick="setTab('plan')">
+    <div class="nl">${now?'▶ Most zajlik':'⏭ Következő'}</div>
+    <h3>${n.icon} ${esc(n.title)}</h3>
+    <div class="meta">📅 ${dayWord(n.date)} · ${n.time?esc(n.time):'egész nap'}${rel&&!now?` · <span class="rel">${rel}</span>`:''}${n.it.type!=='plan'?' · '+n.kind:''}</div>
+    ${n.it.note&&n.it.type!=='stay'?`<div class="note">${esc(n.it.note)}</div>`:''}
+    ${n.address?`<div class="meta" style="margin-top:4px">📍 ${esc(addrTxt(n.address))}</div><div class="acts">${mapA(n.address,t)}</div>`:''}
+    ${list?`<div class="after"><div style="margin-bottom:4px">Utána időrendben:</div>${list}${more}</div>`:''}</div>`;
 }
 function statsHTML(t){
   const its=S.items.filter(i=>i.trip===t.id), of=k=>its.filter(i=>i.type===k);
@@ -260,13 +305,13 @@ function statsHTML(t){
   const beforeTrip = !t.from || todayStr() < t.from;
   const c=(tab,big,small,label)=>`<button onclick="setTab('${tab}')"><b>${big}</b>${small?`<small>${small}</small>`:''}<span>${label}</span></button>`;
   return `<div class="stats">
-    ${c('plan',upcomingPlans(t).length,'','program hátra')}
+    ${c('plan',upcoming(t).length,'','program hátra')}
     ${c('sight',sg.filter(i=>!i.done).length,sg.length?'/'+sg.length:'','látnivaló hátra')}
     ${c('food',fo.filter(i=>!i.done).length,fo.length?'/'+fo.length:'','étterem hátra')}
     ${beforeTrip ? c('pack',pk.filter(i=>i.done).length,'/'+pk.length,'bepakolva') : c('spot',of('spot').length,'','felfedezett hely')}
   </div>`;
 }
-function overviewHTML(t){ return `<div id="nextbox">${nextHTML(t)}</div>${statsHTML(t)}`; }
+function overviewHTML(t){ return `<div id="nextbox">${nextHTML(t, true)}</div>${statsHTML(t)}`; }
 
 /* ===== Boltok oldalpanel ===== */
 const SHOP_CATS=['Ruha','Kozmetika','Élelmiszer','Hasznos','Egyéb'];
@@ -293,7 +338,9 @@ function materializeShops(){
   queue({a:'saveMany',items});
   return items;
 }
+let DMODE='shop', CALOFF=0;
 function renderDrawer(){
+  if(DMODE==='cal') return renderCal();
   const list=currentShops(), g={};
   list.forEach(s=>{ const c=SHOP_CATS.indexOf(s.cat)>=0?s.cat:'Egyéb'; (g[c]=g[c]||[]).push(s); });
   let x=`<div class="dh"><h2>🛍️ Legközelebbi helyek</h2><button class="ib" onclick="closeDrawer()">✕</button></div>
@@ -313,6 +360,7 @@ function renderDrawer(){
   $('drawer').innerHTML=x;
 }
 function openDrawer(){
+  DMODE='shop'; $('drawer').classList.remove('wide');
   DE=false; GEO_ST = GEO ? '📍 A jelenlegi helyzeted alapján' : '📍 Helymeghatározás...';
   renderDrawer();
   $('drawer').classList.add('open'); $('dshade').classList.add('open');
@@ -324,6 +372,43 @@ function openDrawer(){
   } else GEO_ST='📍 A Google Térkép a saját helyzetedhez keres';
 }
 function closeDrawer(){ $('drawer').classList.remove('open'); $('dshade').classList.remove('open'); }
+
+/* ===== Napi nézet (naptár) ===== */
+function openCal(){
+  DMODE='cal'; CALOFF=0;
+  $('drawer').classList.add('wide');
+  renderCal();
+  $('drawer').classList.add('open'); $('dshade').classList.add('open');
+  setTimeout(()=>{ const n=document.querySelector('#drawer .nowl') || document.querySelector('#drawer .ev'); if(n) n.scrollIntoView({block:'center'}); else $('drawer').scrollTop=0; },320);
+}
+function allEntries(){ return S.items.filter(i=>i.type==='trip').flatMap(t=>timeline(t,true)); }
+function eMin(e){ const [hh,mm]=String(e.time).split(':').map(Number); return (hh||0)*60+(mm||0); }
+function calDay(d){
+  const es=allEntries().filter(e=>e.date===d), allDay=es.filter(e=>!e.time), timed=es.filter(e=>e.time).sort((a,b)=>eMin(a)-eMin(b));
+  const td=todayStr(), PX=48;
+  let sH=7, eH=24; timed.forEach(e=>{ sH=Math.min(sH,Math.floor(eMin(e)/60)); });
+  const colEnd=[]; timed.forEach(e=>{ const s=eMin(e); let c=colEnd.findIndex(x=>x<=s); if(c<0){ c=colEnd.length; colEnd.push(0); } colEnd[c]=s+60; e._c=c; });
+  const nc=Math.max(1,colEnd.length);
+  let x=`<div class="calh ${d===td?'td':''}">${dayShort(d)} · ${fd(d)}</div>`;
+  if(allDay.length) x+=`<div class="alld">${allDay.map(e=>`<span class="k-${e.it.type}" onclick="closeDrawer();editItem('${e.it.id}')">${e.icon} ${esc(e.title)}</span>`).join('')}</div>`;
+  if(!es.length) x+=`<div class="meta">Nincs erre a napra program.</div>`;
+  x+=`<div class="cal" style="height:${(eH-sH)*PX}px">`;
+  for(let hr=sH; hr<eH; hr++) x+=`<div class="hr" style="top:${(hr-sH)*PX}px"><span>${String(hr).padStart(2,'0')}:00</span></div>`;
+  timed.forEach(e=>{
+    const top=(eMin(e)-sH*60)/60*PX;
+    x+=`<div class="ev k-${e.it.type} ${e.it.done?'dn':''}" style="top:${top}px;height:${PX-3}px;left:calc(42px + (100% - 44px) * ${e._c} / ${nc});width:calc((100% - 44px) / ${nc} - 3px)" onclick="closeDrawer();editItem('${e.it.id}')"><b>${esc(e.time)}</b> ${e.icon} ${esc(e.title)}${e.address?`<br><span style="opacity:.75">${esc(addrTxt(e.address))}</span>`:''}</div>`;
+  });
+  if(d===td){ const n=new Date(), m=n.getHours()*60+n.getMinutes(); if(m>=sH*60) x+=`<div class="nowl" style="top:${(m-sH*60)/60*PX}px"></div>`; }
+  return x+`</div>`;
+}
+function renderCal(){
+  const base=new Date(); base.setDate(base.getDate()+CALOFF);
+  const d1=ymd(base); base.setDate(base.getDate()+1); const d2=ymd(base);
+  $('drawer').innerHTML=`<div class="dh"><h2>📅 Napi nézet</h2><button class="ib" onclick="closeDrawer()">✕</button></div>
+    <div class="calnav"><button onclick="CALOFF--;renderCal()">‹ Előző</button><button onclick="CALOFF=0;renderCal()">Ma</button><button onclick="CALOFF++;renderCal()">Következő ›</button></div>
+    <div class="meta">Koppints egy programra a részletekhez.</div>
+    ${calDay(d1)}${calDay(d2)}`;
+}
 function addShop(){
   const name=$('shopname').value.trim(); if(!name){ $('shopname').focus(); return; }
   materializeShops();
@@ -522,10 +607,10 @@ function logout(force){
 }
 
 /* ===== Nézetek ===== */
-function safeRender(){ const a=document.activeElement; if(a && a.id==='qp' && a.value) return; render(); }
+function safeRender(){ const a=document.activeElement; if(a && (a.id==='qp'||a.id==='qi') && a.value) return; render(); }
 function render(){
   const app=$('app');
-  $('dtab').style.display = S.code ? '' : 'none';
+  $('dtab').style.display = $('ctab').style.display = S.code ? '' : 'none';
   if(!S.code){ closeDrawer(); app.innerHTML=loginHTML(); return; }
   const trip=S.items.find(i=>i.type==='trip' && i.id===S.trip);
   if(!trip){ S.trip=null; app.innerHTML=tripsHTML(); }
@@ -539,41 +624,53 @@ function loginHTML(){
   <button id="lbtn" class="btn p" style="width:100%;margin-top:12px">Belépés</button></form></div>`;
 }
 function tripsHTML(){
-  const today=todayStr();
-  const trips=S.items.filter(i=>i.type==='trip').sort((a,b)=>(b.from||'').localeCompare(a.from||''));
+  const td=todayStr(), cur=[], fut=[], nod=[], past=[];
+  S.items.filter(i=>i.type==='trip').forEach(t=>{
+    if(!t.from) return nod.push(t);
+    const end=t.to||t.from;
+    if(end<td) past.push(t); else if(t.from>td) fut.push(t); else cur.push(t);
+  });
+  cur.sort((a,b)=>a.from.localeCompare(b.from));
+  fut.sort((a,b)=>a.from.localeCompare(b.from));
+  past.sort((a,b)=>(b.to||b.from).localeCompare(a.to||a.from));
   let h=`<header><h1>✈️ Utazásaink<div class="sub">Szia ${esc(S.user)}!<span id="sync" class="sync"></span></div></h1>
     <button class="ib" onclick="refreshAll(this)">⟳</button><button class="ib" onclick="logout()">⏻</button></header><main>`;
-  if(!trips.length) h+=empty('Még nincs utazás.<br>Nyomd meg a <b>+</b> gombot és vedd fel az elsőt!');
-  trips.forEach(t=>{
-    const now = t.from && t.to && t.from<=today && today<=t.to;
-    const past = t.to && t.to<today;
-    const n=S.items.filter(i=>i.trip===t.id).length;
-    h+=`<div class="card ${now?'today':''}" onclick="openTrip('${t.id}')" style="${past?'opacity:.75':''}">
-      <div class="row"><div style="flex:1;min-width:0"><h3>${esc(t.name)}</h3>
-      <div class="meta">${esc(t.place||'')}${t.place&&t.from?' · ':''}${range(t.from,t.to)}</div></div>
-      ${now?'<span class="chip g">MOST</span>':''}</div>${(()=>{ const tg=tripTarget(t); return tg&&tg>new Date() ? `<div class="cdline" data-cd="${tg.toISOString()}" data-mode="line">${cdRender(tg,'line')}</div>` : ''; })()}${(()=>{ if(past) return ''; const u=upcomingPlans(t)[0]; return u ? `<div class="meta" style="margin-top:6px">⏭ ${esc(u.title)} · ${dayWord(u.date)}${u.time?' '+esc(u.time):''}</div>` : ''; })()}<div class="meta" style="margin-top:6px">${n} bejegyzés</div></div>`;
-  });
+  if(!cur.length && !fut.length && !nod.length && !past.length) h+=empty('Még nincs utazás.<br>Nyomd meg a <b>+</b> gombot és vedd fel az elsőt!');
+  const sec=(title,list,kind)=>{ if(!list.length) return; h+=`<div class="sec">${title}</div>`+list.map(t=>tripCard(t,kind)).join(''); };
+  sec('🌴 Most',cur,'cur'); sec('✈️ Következő utak',fut,'fut'); sec('Dátum nélkül',nod,'nod'); sec('Korábbi utak',past,'past');
   return h+`</main><button class="fab" onclick="openForm('trip')">+</button>`;
+}
+function tripCard(t,kind){
+  const n=S.items.filter(i=>i.trip===t.id).length, tg=tripTarget(t);
+  const days=tripDays(t), ix=days.indexOf(todayStr());
+  const u = kind==='past' ? null : upcoming(t)[0];
+  return `<div class="card ${kind==='cur'?'today':''}" onclick="openTrip('${t.id}')" style="${kind==='past'?'opacity:.7':''}">
+    <div class="row"><div style="flex:1;min-width:0"><h3>${esc(t.name)}</h3>
+    <div class="meta">${esc(t.place||'')}${t.place&&t.from?' · ':''}${range(t.from,t.to)}</div></div>
+    ${kind==='cur'?`<span class="chip g">${ix>=0?ix+1+'. nap':'MOST'}</span>`:''}</div>
+    ${tg&&tg>new Date()?`<div class="cdline" data-cd="${tg.toISOString()}" data-mode="line">${cdRender(tg,'line')}</div>`:''}
+    ${u?`<div class="meta" style="margin-top:6px">⏭ ${u.icon} ${esc(u.title)} · ${dayWord(u.date)}${u.time?' '+esc(u.time):''}</div>`:''}
+    <div class="meta" style="margin-top:6px">${n} bejegyzés</div></div>`;
 }
 function tripHTML(t){
   const items=S.items.filter(i=>i.trip===t.id && i.type===S.tab);
   return `<header><button class="ib" onclick="closeTrip()">←</button>
     <h1>${esc(t.name)}<div class="sub">${range(t.from,t.to)}<span id="sync" class="sync"></span></div></h1>
     <button class="ib" onclick="refreshAll(this)">⟳</button><button class="ib" onclick="editItem('${t.id}')">✏️</button></header>
-    <main>${tripBanner(t)}${overviewHTML(t)}${R[S.tab](items,t)}</main>
-    <button class="fab" onclick="openForm('${S.tab}')">+</button>
+    <main>${(R[S.tab]||R.home)(items,t)}</main>
+    <button class="fab" onclick="${S.tab==='home'||!R[S.tab]?'openAdd()':`openForm('${S.tab}')`}">+</button>
     <nav>${TABS.map(x=>`<button class="${x.k===S.tab?'on':''}" onclick="setTab('${x.k}')"><span>${x.ic}</span>${x.l}</button>`).join('')}</nav>`;
 }
 
 /* ===== Fülek tartalma ===== */
-const byDate=(a,b)=>(a.date||'9999').localeCompare(b.date||'9999')||(a.title||'').localeCompare(b.title||'','hu');
+const byDate=(a,b)=>((a.date||'9999')+(a.time||'')).localeCompare((b.date||'9999')+(b.time||''))||(a.title||'').localeCompare(b.title||'','hu');
 function ckCard(i,t){
-  const meta=[i.address?'📍 '+esc(addrTxt(i.address)):'', i.date?'🗓️ '+fd(i.date):''].filter(Boolean).join(' · ');
+  const meta=[i.address?'📍 '+esc(addrTxt(i.address)):'', i.date?'🗓️ '+fd(i.date)+(i.time?' '+esc(i.time):''):''].filter(Boolean).join(' · ');
   const r=Number(i.rating)||0;
   return `<div class="card ${i.done?'done':''}" onclick="editItem('${i.id}')">
     <div class="row"><button class="chk ${i.done?'on':''}" onclick="event.stopPropagation();toggle('${i.id}')">✓</button>
     <div style="flex:1;min-width:0"><h3>${esc(i.title)}</h3>${meta?`<div class="meta">${meta}</div>`:''}</div>${who(i.author)}</div>
-    ${r?`<div class="stars-s">${'★'.repeat(r)}<span>${'★'.repeat(5-r)}</span></div>`:''}${noteH(i)}${actsH(i.address,t)}</div>`;
+    ${r?`<div class="stars-s">${'★'.repeat(r)}<span>${'★'.repeat(5-r)}</span></div>`:''}${noteH(i)}${(i.address||(!i.date&&!i.done))?`<div class="acts">${mapA(i.address,t)}${!i.date&&!i.done?`<button class="a" onclick="event.stopPropagation();openSchedule('${i.id}')">🕐 Időpont</button>`:''}</div>`:''}</div>`;
 }
 function checkList(items,t,doneLabel,emptyTxt){
   if(!items.length) return empty(emptyTxt);
@@ -596,18 +693,47 @@ const R = {
         <div class="acts">${mapA(s.address,t)}${s.link?`<a class="a" href="${esc(safeUrl(s.link))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗 Foglalás</a>`:''}</div>
       </div>`).join('');
   },
+  home:(items,t)=>{
+    const up=upcoming(t), rest=up.slice(1), td=todayStr();
+    let x=tripBanner(t)+overviewHTML(t);
+    if(rest.length){
+      const g={}; rest.forEach(e=>{ (g[e.date]=g[e.date]||[]).push(e); });
+      x+=`<div class="sec">Következők időrendben</div>`+Object.keys(g).sort().map(d=>`<div class="card"><div class="dayh ${d===td?'td':''}">${dayShort(d)}${d===td||dayShort(d)==='Holnap'?' · '+fd(d):''}</div>`+
+        g[d].map(e=>`<div class="tl" onclick="editItem('${e.it.id}')"><div class="tt">${e.time?esc(e.time):'egész nap'}</div>
+          <div style="flex:1;min-width:0">${e.icon} ${esc(e.title)}${e.it.type!=='plan'?` <span class="meta">· ${e.kind}</span>`:''}${e.address?`<div class="meta">📍 ${esc(addrTxt(e.address))}</div>`:''}</div></div>`).join('')+`</div>`).join('');
+    } else if(!up.length){
+      x+=empty('Még nincs időponthoz kötött program.<br>Írjatok fel ötleteket lent, és adjatok nekik időpontot!');
+    }
+    const ideas=S.items.filter(i=>i.trip===t.id && ['plan','food','sight'].indexOf(i.type)>=0 && !i.date && !i.done)
+      .sort((a,b)=>(a.created||'').localeCompare(b.created||''));
+    x+=`<div class="sec">📝 Tervezett – még nincs időpont (${ideas.length})</div><div class="idea">
+      <div class="quick"><input id="qi" placeholder="Ötlet, pl. Siam Park" enterkeyhint="done" onkeydown="if(event.key==='Enter'){event.preventDefault();quickIdea()}">
+      <select id="qt" onchange="QT=this.value">${[['plan','Program'],['food','Étterem'],['sight','Látnivaló']].map(([k,l])=>`<option value="${k}" ${k===QT?'selected':''}>${l}</option>`).join('')}</select>
+      <button class="ib" style="height:48px;width:48px" onclick="quickIdea()">+</button></div>
+      ${ideas.length?ideas.map(i=>`<div class="tl" onclick="openSchedule('${i.id}')"><div style="flex:1;min-width:0">${KIND[i.type][0]} ${esc(i.title)} <span class="meta">· ${KIND[i.type][1]}</span>${i.note?`<div class="meta">${esc(i.note)}</div>`:''}</div><span class="chip nx">🕐 Időpont</span></div>`).join('')
+        :`<div class="meta" style="margin-top:10px">Ide írhatjátok fel, amit szeretnétek, de még nem tudjátok, mikor. Koppintásra adhattok neki napot és időt.</div>`}
+    </div>`;
+    return x;
+  },
   plan:(items,t)=>{
-    if(!items.length) return empty('Még nincs program.<br>Vedd fel, mikor hova mentek!');
-    const today=todayStr(), g={}, nx=(upcomingPlans(t)[0]||{}).id;
-    items.forEach(i=>{ (g[i.date||'']=g[i.date||'']||[]).push(i); });
-    return Object.keys(g).sort().map(d=>`<div class="sec" style="${d===today?'color:var(--acc)':''}">${d?fd(d):'Nap nélkül'}${d===today?' · MA':''}</div>`+
-      g[d].sort((a,b)=>(a.time||'99').localeCompare(b.time||'99')).map(p=>`
-      <div class="card ${p.id===nx?'today':''} ${p.id!==nx&&isPastPlan(p)?'past':''}" onclick="editItem('${p.id}')">
-        ${p.id===nx?'<span class="chip nx" style="margin-bottom:8px">⏭ KÖVETKEZŐ</span>':''}
-        <div class="row"><div class="time">${esc(p.time||'–')}</div>
-        <div style="flex:1;min-width:0"><h3>${esc(p.title)}</h3>${p.address?`<div class="meta">📍 ${esc(addrTxt(p.address))}</div>`:''}</div>${who(p.author)}</div>
-        ${noteH(p)}${actsH(p.address,t)}
-      </div>`).join('')).join('');
+    const tl=timeline(t,true);
+    const und=S.items.filter(i=>i.trip===t.id && i.type==='plan' && !i.date);
+    const undH = und.length ? `<div class="sec">Időpont nélkül (${und.length})</div>`+und.map(i=>`<div class="card" onclick="openSchedule('${i.id}')"><div class="row"><h3 style="flex:1;min-width:0">🗓️ ${esc(i.title)}</h3><span class="chip nx">🕐 Időpont</span></div>${noteH(i)}</div>`).join('') : '';
+    if(!tl.length) return (und.length?'':empty('Még nincs időponthoz kötött program.<br>Ide kerül minden, aminek napja van:<br>program, étterem, látnivaló, repülőjegy, be- és kijelentkezés.'))+undH;
+    const today=todayStr(), g={}, nx=(upcoming(t)[0]||{}).key;
+    tl.forEach(e=>{ (g[e.date]=g[e.date]||[]).push(e); });
+    return `<div class="meta" style="margin:0 2px 4px">Minden esemény időrendben – a <b>+</b> gombbal új programot adhatsz hozzá.</div>`+
+      Object.keys(g).sort().map(d=>`<div class="sec" style="${d===today?'color:var(--acc)':''}">${fd(d)}${d===today?' · MA':''}</div>`+
+      g[d].map(e=>{
+        const isNx=e.key===nx, past=!isNx && isPastE(e);
+        return `<div class="card ${isNx?'today':''} ${past?'past':''}" onclick="editItem('${e.it.id}')">
+          ${isNx?'<span class="chip nx" style="margin-bottom:8px">⏭ KÖVETKEZŐ</span>':''}
+          <div class="row"><div class="time">${e.time?esc(e.time):'<span style="font-size:11px">egész<br>nap</span>'}</div>
+          <div style="flex:1;min-width:0"><h3>${e.icon} ${esc(e.title)}${e.it.done?' ✓':''}</h3>
+          <div class="meta">${e.it.type!=='plan'?e.kind:''}${e.it.type!=='plan'&&e.address?' · ':''}${e.address?'📍 '+esc(addrTxt(e.address)):''}</div></div>${who(e.it.author)}</div>
+          ${e.it.type==='plan'||e.it.type==='food'||e.it.type==='sight'?noteH(e.it):''}${!past&&e.address?actsH(e.address,t):''}
+        </div>`;
+      }).join('')).join('')+undH;
   },
   sight:(items,t)=>checkList(items,t,'Megvolt','Ide jönnek a megnézendő látnivalók.<br>Kipipálhatjátok, ha megvoltatok.'),
   food:(items,t)=>checkList(items,t,'Voltunk','Ide jönnek a kinézett éttermek.<br>Utána értékelhetitek is őket.'),
@@ -617,7 +743,8 @@ const R = {
       <div class="card" onclick="editItem('${i.id}')">
         <div class="row"><div style="flex:1;min-width:0"><h3>${esc(i.title)}</h3>
         <div class="meta">${i.cat?`<span class="chip">${esc(i.cat)}</span> `:''}${esc(addrTxt(i.address))}</div></div>${who(i.author)}</div>
-        ${noteH(i)}${actsH(i.address,t)}
+        ${noteH(i)}
+        <div class="acts">${mapA(i.address,t)}<button class="a" onclick="event.stopPropagation();openSchedule('${i.id}')">🕐 Időpont / foglalás</button></div>
       </div>`).join('');
   },
   docs:(items,t)=>{
@@ -654,7 +781,7 @@ const R = {
 };
 
 /* ===== Műveletek ===== */
-function openTrip(id){ S.trip=id; persist(); render(); scrollTo(0,0); }
+function openTrip(id){ S.trip=id; S.tab='home'; persist(); render(); scrollTo(0,0); }
 function closeTrip(){ S.trip=null; persist(); render(); scrollTo(0,0); }
 function setTab(k){ S.tab=k; persist(); render(); scrollTo(0,0); }
 function editItem(id){ const it=S.items.find(i=>i.id===id); if(it) openForm(it.type,it); }
@@ -689,6 +816,51 @@ function resetPack(){
   if(!confirm('Minden pipát leveszel a pakolólistáról?')) return;
   const items=S.items.filter(i=>i.trip===S.trip && i.type==='pack' && i.done).map(i=>Object.assign({},i,{done:false}));
   queue({a:'saveMany',items});
+}
+
+/* ===== Tervezett ötletek, időpont adás ===== */
+let QT='plan';
+function quickIdea(){
+  const el=$('qi'), v=el.value.trim(); if(!v) return;
+  QT=$('qt').value;
+  queue({a:'save',item:{id:uid(),trip:S.trip,type:QT,title:v,author:S.user,created:nowIso()}});
+  setTimeout(()=>{ const q=$('qi'); if(q) q.focus(); },30);
+}
+function dayField(id,v,t){
+  const days=tripDays(t);
+  if(days.length){
+    let opts=`<option value="" ${!v?'selected':''}>— Válassz napot —</option>`;
+    if(v && days.indexOf(v)<0) opts+=`<option value="${esc(v)}" selected>${fd(v)}</option>`;
+    opts+=days.map((d,i)=>`<option value="${d}" ${d===v?'selected':''}>${i+1}. nap · ${fd(d)}</option>`).join('');
+    return `<select id="${id}">${opts}</select>`;
+  }
+  return `<input type="date" id="${id}" value="${esc(v||'')}">`;
+}
+let SCHED=null;
+function openSchedule(id){
+  const it=S.items.find(i=>i.id===id); if(!it) return;
+  const t=S.items.find(i=>i.id===S.trip); SCHED=id;
+  const def = it.type==='spot' ? (['Étterem','Kávézó','Bár'].indexOf(it.cat)>=0 ? 'food' : 'plan') : it.type;
+  openSheet(`<h2>🕐 Időpont megadása</h2><div class="meta" style="font-size:15px;color:var(--txt);margin-top:6px">${KIND[it.type][0]} ${esc(it.title)}</div>
+    <label>Hová kerüljön?</label><select id="sc_type">${[['plan','🗓️ Program'],['food','🍽️ Étterem / vacsora'],['sight','📸 Látnivaló']].map(([k,l])=>`<option value="${k}" ${k===def?'selected':''}>${l}</option>`).join('')}</select>
+    ${it.type==='spot'?'<div class="meta" style="margin-top:6px">Átkerül a Felfedezett helyek közül a kiválasztott részbe és az időrendi listába.</div>':''}
+    <label>Nap *</label>${dayField('sc_date',it.date,t)}
+    <label>Időpont (üresen hagyható)</label><div class="quick"><input type="time" id="sc_time" value="${esc(it.time||'')}">${clearBtn('sc_time')}</div>
+    <div class="btns"><button class="btn" onclick="closeSheet();editItem('${id}')">Részletek</button><button class="btn p" onclick="saveSchedule()">Mentés</button></div>
+    <div class="btns" style="margin-top:10px"><button class="btn" onclick="closeSheet()">Mégse</button></div>`);
+}
+function saveSchedule(){
+  const it=S.items.find(i=>i.id===SCHED); if(!it) return closeSheet();
+  const type=$('sc_type').value, date=$('sc_date').value, time=$('sc_time').value;
+  if(!date){ toast('Válassz napot'); $('sc_date').focus(); return; }
+  closeSheet();
+  queue({a:'save',item:Object.assign({},it,{type,date,time})});
+  toast('Bekerült: '+KIND[type][1]+' · '+dayWord(date)+(time?' '+time:''));
+}
+function openAdd(){
+  const opts=[['plan','🗓️ Program'],['food','🍽️ Étterem'],['sight','📸 Látnivaló'],['spot','📍 Felfedezett hely'],['docs','🎫 Jegy'],['stay','🏠 Szállás']];
+  openSheet(`<h2>Mit adsz hozzá?</h2><div class="pick">${opts.map(([k,l])=>`<button onclick="closeSheet();openForm('${k}')">${l}</button>`).join('')}</div>
+    <div class="btns"><button class="btn" onclick="closeSheet()">Mégse</button></div>`);
 }
 
 /* ===== Űrlap ===== */
@@ -741,6 +913,7 @@ async function saveForm(){
     if(f.req && !v){ toast('Kötelező: '+f.l); el.focus(); return; }
     o[f.k]=v;
   }
+  if(it.type==='trip' && o.from && o.to && o.to<o.from){ toast('A hazaérkezés nem lehet korábban, mint az indulás – nézd meg a dátumokat!'); $('f_to').focus(); return; }
   if(F[it.type].some(f=>f.t==='files')){
     if(FM.newFiles.length){
       const btn=$('savebtn'); FM.busy=true; btn.disabled=true;
@@ -764,7 +937,7 @@ async function saveForm(){
   }
   if(isNew){ o.id=uid(); o.author=S.user; o.created=nowIso(); }
   closeSheet();
-  if(isNew && o.type==='trip'){ S.trip=o.id; S.tab='stay'; }
+  if(isNew && o.type==='trip'){ S.trip=o.id; S.tab='home'; }
   queue({a:'save',item:o});
 }
 function delItem(){
